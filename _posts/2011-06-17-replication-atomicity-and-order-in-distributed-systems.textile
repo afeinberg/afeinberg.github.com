@@ -36,7 +36,7 @@ Problem is, however, that _these goals are contradictory_.
 
 h2. State machines, atomic multicast and consensus
 
-The approach we've just described is "state machine replication":http://en.wikipedia.org/wiki/State%20machine%20replication. This was first proposed by Leslie Lamport (also known as the author of _LaTeX_), in the paper "_Time, Clocks and the Ordering of Events in a Distributed System_":http://research.microsoft.com/en-us/um/people/lamport/pubs/pubs.html#time-clocks. The idea is that if we model each node in a distributed system as a state machine, and send the same input (messages) in the same order to each state machine, we will end up in the same final state. 
+The approach we've just described is "state machine replication":http://en.wikipedia.org/wiki/State%20machine%20replication. This was first proposed by Leslie Lamport (also known as the author of LaTeX), in the paper "_Time, Clocks and the Ordering of Events in a Distributed System_":http://research.microsoft.com/en-us/um/people/lamport/pubs/pubs.html#time-clocks. The idea is that if we model each node in a distributed system as a state machine, and send the same input (messages) in the same order to each state machine, we will end up in the same final state. 
 
 This leads to our next question, how do we ensure that the same messages are sent to each machine, in the same order? This problem is known as "_atomic broadcast_":http://en.wikipedia.org/wiki/Atomic%20broadcast or more generally _atomic multicast_. We should take special care to distinguish this from the "IP multicast protocol":http://en.wikipedia.org/wiki/IP%20multicast which makes no guarantees about order or reliability of messages: UDP, rather than TCP is layered on top of it.
 
