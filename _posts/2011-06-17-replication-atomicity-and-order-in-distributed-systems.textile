@@ -44,7 +44,7 @@ A better way to view atomic multicast is a as a special case of the publish subs
 
 A generalization of this problem is the distributed transaction problem: how we do ensure that either all nodes execute the exact same transaction (executing all operations in the same order), or none do?
 
-Traditionally "two phase commit":http://en.wikipedia.org/wiki/Two%20%phase%commit (2PC) algorithm has been used for distributed transactions. The problem with two phase commit is that it isn't fault tolerant: if the coordinator node fails, the process is blocked until the coordinator is repaired ("Consensus on Transaction Commit":http://research.microsoft.com/apps/pubs/default.aspx?id=64636)
+Traditionally "two phase commit":http://en.wikipedia.org/wiki/Two%20%phase%20commit (2PC) algorithm has been used for distributed transactions. The problem with two phase commit is that it isn't fault tolerant: if the coordinator node fails, the process is blocked until the coordinator is repaired ("Consensus on Transaction Commit":http://research.microsoft.com/apps/pubs/default.aspx?id=64636)
 
 "_Consensus_":http://en.wikipedia.org/wiki/Consensus%20(computer%20science) algorithms solve the problem of how multiples nodes could arrive at a commonly accepted value in the process of failures. We can use consensus algorithm to build fault tolerant distributed commit protocols by (this is somewhat of an over-simplification) having nodes "decide" whether or not a transaction has been committed.
 
