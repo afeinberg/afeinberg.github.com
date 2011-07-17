@@ -1,0 +1,79 @@
+---
+layout: post
+title: Replication, atomicity and order in distributed systems
+---
+
+h1. {{ page.title }}
+
+
+Distributed systems are an increasingly important topic in Computer Science. The difficulty and immediate applicability of this topic is what makes it distributed systems to rewarding to study and build.
+
+The goal of this post (and future posts on this topic) is to help the reader develop a basic toolkit they could use to reason about distributed systems. The hope is to help the reader see the well known patterns in the specific problems they're solving, to identify the cases where others have already solved the problems they're facing and to understand the cases where solving hundred percent of the problem may not be worth the effort.
+
+h2. Leaving a Newtonian universe
+
+For the most part, a single machine is a Newtonian universe: that is, we have a single frame of reference. As a result we can impose a total _Happened-Before_ order on events i.e., we can _always_ tell that one event happened before another event. Communication can happen over shared memory, access to which can be synchronized through locks and memory barriers[1]. 
+
+When we move to a client and server architecture, message passing architecture is required. In the case of a single server (with one or more clients), we can still maintain an illusion of a Newtonian universe: TCP (the transport layer used by popular application protocols) gives a guarantee that packets will be delivered to the server in the same order that they were sent by a client. As we'll later see, this guarantee can be used as a power primitive upon which more complex guarantees can be set.
+
+However, there are two core reasons why we no longer want to run an application on a single server: in recent times it has become consensus that *reliability*, *availability* and *scalability* are best obtained using multiple machines. Mission critical applications must at least maintain reliability and availability; in the case of consumer (and even many enterprise) web applications, with success often come scalability challenges. Thus, it's inevitable that we leave Newton's universe and enter Einstein's[2].
+
+fn1. This is not to belittle the fascinating challenge of building parallel shared memory systems: the topic is merely very well covered and outside of this post. I highly recommend _The Art of Multiprocessor Programming_ (by Maurice Herlihy) and _Java Concurrency In Practice_ (Goetz, Lea et al) to those interested in shared memory concurrency.
+
+fn2. The comparison with theory of relativity is original: Leslie Lamport and "Pat Helland":http://blogs.msdn.com/b/pathelland/ have used this comparison. Several concepts in distributed systems such as Vector Clocks and Lamport Timestamps are explicitly inspired by Theory of Relativity.
+
+h2. Intuitive formulation of the problem
+
+Suppose we have a group of (physical or logical) nodes: perhaps replicas of a partition (aka a _shard_) of a "shared nothing":http://en.wikipedia.org/wiki/Shared%20nothing database, a group of workstations collaborating on a document or a set of servers running a stateful business application for one specific customer. Another group of nodes (which may or may not overlap with the first group of nodes) is sending messages the first group. In the case of a collaborative editor, a sample message could be "insert this line into paragraph three of the document". Naturally, we would like these messages delivered to all available machines in the first group.
+
+Question is, how do we ensure, that after the messages are delivered to all machines, that the machines remain in the same state? In the case of our collaborative editor application, suppose Bob is watching Alice type over the shoulder and sees her type "The" and types "quick brown fox" after: we'd like all instances of the collaborative editor to say "The quick brown fox" and not "quick brown fox The"; nor do we want messages delivered multiple times _e.g.,_ not "The The quick brown fox" and especially not "The quick brown fox The"!
+
+We'd also very much like (or, in many cases, require) that if one of the servers goes down, the accumulated state is not lost (reliability). We'd also like to be able to view the state in the case of server failures (read availability) as well as continue sending messages (write availability). When a node fails, we'd also like to be able to add a new nodes to take its place (restoring its state from other replicas). Ideally, we'd like the latter process to be as dynamic as possible.
+
+We'd also like for this to have reasonable performance guarantees. In the case of the collaborative editor, we'd like characters to appear on the screen seemingly immediately after they are typed; in the case of the shared nothing database, we'd like to reason about performance not too differently from from how we reason about single node database performance i.e., determined (in terms of both _throughput_ and _latency_) primarily by the CPU, memory, disks and ethnernet. In many cases we'd like our distributed systems to even perform better than analogous single node systems (by allowing operations to be spread across multiple nodes), especially under high load.
+
+Problem is, however, that _these goals are contradictory_.
+
+h2. State machines, atomic multicast and consensus
+
+The approach we've just described is "state machine replication":http://en.wikipedia.org/wiki/State%20machine%20replication. This was first proposed by Leslie Lamport (also known as the author of _LaTeX_), in the paper "_Time, Clocks and the Ordering of Events in a Distributed System_":http://research.microsoft.com/en-us/um/people/lamport/pubs/pubs.html#time-clocks. The idea is that if we model each node in a distributed system as a state machine, and send the same input (messages) in the same order to each state machine, we will end up in the same final state. 
+
+This leads to our next question, how do we ensure that the same messages are sent to each machine, in the same order? This problem is known as "_atomic broadcast_":http://en.wikipedia.org/wiki/Atomic%20broadcast or more generally _atomic multicast_. We should take special care to distinguish this from the "IP multicast protocol":http://en.wikipedia.org/wiki/IP%20multicast which makes no guarantees about order or reliability of messages: UDP, rather than TCP is layered on top of it.
+
+A better way to view atomic multicast is a as a special case of the publish subscribe pattern (used by message queing systems such as "ActiveMQ":http://activemq.apache.org, "RabbitMQ":http://www.rabbitmq.com, "Kafka":http://sna-projects.com/kafka/ and "Virtual Synchrony":http://en.wikipedia.org/wiki/Virtual%20synchrony based systems such as "JGroups":http://www.jgroups.org/ and "Spread":http://www.spread.org/ [3]).
+
+A generalization of this problem is the distributed transaction problem: how we do ensure that either all nodes execute the exact same transaction (executing all operations in the same order), or none do?
+
+Traditionally "two phase commit":http://en.wikipedia.org/wiki/Two%20%phase%commit (2PC) algorithm has been used for distributed transactions. The problem with two phase commit is that it isn't fault tolerant: if the coordinator node fails, the process is blocked until the coordinator is repaired ("Consensus on Transaction Commit":http://research.microsoft.com/apps/pubs/default.aspx?id=64636)
+
+"_Consensus_":http://en.wikipedia.org/wiki/Consensus%20(computer%20science) algorithms solve the problem of how multiples nodes could arrive at a commonly accepted value in the process of failures. We can use consensus algorithm to build fault tolerant distributed commit protocols by (this is somewhat of an over-simplification) having nodes "decide" whether or not a transaction has been committed.
+
+fn3. Virtual synchrony (making asynchronous systems appear as synchronous) is itself a research topic that is closesly related to and at times complemented by consensus work. Ken Birman's group at Cornell has done a great deal of work on it. Unfortunately, it was difficult to work much of this fascinating research into a high level blog post. 
+
+h3. Theoretic impossibility, practical possibility
+
+Problem is that it's impossible to construct a consensus algorithm that will terminate in a guaranteed time-bound in an asynchronous system lacking a common clock: this is known (after the Fisher, Lynch, Patterson) as the "FLP impossibility result":http://portal.acm.org/citation.cfm?doid=3149.214121. Eric Brewer's "CAP theorem":http://en.wikipedia.org/wiki/CAP%20theorem (a "well covered":http://www.cloudera.com/blog/2010/04/cap-confusion-problems-with-partition-tolerance/ "topic":http://codahale.com/you-cant-sacrifice-partition-tolerance/) can be argued to be an elegant and intuitive re-statement of the FLP.
+
+In practice, however, practical consensus algorithms can be constructed with reasonable liveness properties. It does, however, imply that consensus should be limited in its applications.
+
+One thing to note is that consensus protocols can typically handle simple or clean failures (failures of minority of nodes), at the cost of greater latency: handling more complex (split brain scenarios) where a "quorum":http://en.wikipedia.org/wiki/Quorum%20(Distributed%20Systems) can't be reached is more difficult. 
+
+h4. Paxos and ZAB (Chubby and ZooKeeper)
+
+The "Paxos":http://en.wikipedia.org/wiki/Paxos%20algorithm Consensus and Commit protocols are well known and are seeing greater production use. A detailed discussions of these algorithms is outside the scope of this post, but it should be mentioned that practical Paxos implementations have somewhat modified the algorithms to allow for greater liveness and performance.
+
+Google's "Chubby":http://labs.google.com/papers/chubby.html service is a practical example of a Paxos based system. Chubby provides a file system-like interface and is meant to be used for locks, leases and leader elections. One example of use of Chubby (that will be discussed in further detail in the next post) is assigning mastership of partitions in a distributed database to individual nodes.
+
+Apache "ZooKeeper":http://zookeeper.apache.org/ is another practical example of a system built on a Paxos-like distributed commit protocol. In this case, the consensus problem is slightly modified: rather than assume a purely asynchronous network, the TCP ordering guarantee is "taken advantage of":http://portal.acm.org/citation.cfm?id=1529978. Like Chubby, Paxos exposes a file-system like API and is frequently used for leader election, cluster membership services, service discovery and assigning ownership to partitions in shared nothing stateful distributed systems.
+
+h3. Limitations of total transactional replication 
+
+A question arises: why are transactional replication only used for applications such as cluster membership, leader elections and lock managers? Why aren't these algorithms used for building distributed systems themselves? Wouldn't we all like a fully transactional, fault tolerant, multi-master distributed database? Wouldn't we like message queues that promise to distributed exactly the same messages, to exactly the same nodes, in exactly the same order, delivering each message exactly once at the exact same time?
+
+The above mentioned FLP impossibility result provides one limitation of these systems: many practical systems require tight latency aguarantees in even in the light of machine and network failures. "_The Dangers of Replication and a Solution_":http://research.microsoft.com/apps/pubs/default.aspx?id=68247 also discusses scalability issues such as increases in network traffic, potential deadlocks in what the authors called "anywhere-anytime-anyway transactional replication".
+
+In the case of Chubby and ZooKeeper, this is less of an issue: in a well designed distributed system, cluster membership and partition ownership changes are less frequent than updates themselves (much lower throughput, less of a scalability challenge) and are less sensitive to latency. Finally, by limiting our interaction with consensus based systems, we are able to limit the impact of scenarios of where consensus can't be reached due to machine, software or network failures.
+
+h2. What's next?
+
+The next post will look at alternatives to the common alternatives to total transactional replication as well as several (relatively recent) papers and systems that _do_ apply some transactional replication techniques at scale.
