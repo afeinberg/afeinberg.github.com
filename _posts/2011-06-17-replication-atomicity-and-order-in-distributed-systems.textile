@@ -6,21 +6,21 @@ title: Replication, atomicity and order in distributed systems
 h1. {{ page.title }}
 
 
-Distributed systems are an increasingly important topic in Computer Science. The difficulty and immediate applicability of this topic is what makes it distributed systems to rewarding to study and build.
+Distributed systems are an increasingly important topic in Computer Science. The difficulty and immediate applicability of this topic is what makes distributed systems rewarding to study and build.
 
-The goal of this post (and future posts on this topic) is to help the reader develop a basic toolkit they could use to reason about distributed systems. The hope is to help the reader see the well known patterns in the specific problems they're solving, to identify the cases where others have already solved the problems they're facing and to understand the cases where solving hundred percent of the problem may not be worth the effort.
+The goal of this post (and future posts on this topic) is to help the reader develop a basic toolkit they could use to reason about distributed systems. The toolkit should help the reader see the well known patterns in the specific problems they're solving, to identify the cases where others have already solved the problems they're facing and to understand the cases where solving hundred percent of the problem may not be worth the effort.
 
 h2. Leaving a Newtonian universe
 
-For the most part, a single machine is a Newtonian universe: that is, we have a single frame of reference. As a result we can impose a total _Happened-Before_ order on events i.e., we can _always_ tell that one event happened before another event. Communication can happen over shared memory, access to which can be synchronized through locks and memory barriers[1]. 
+For the most part, a single machine is a Newtonian universe: that is, we have a single frame of reference. As a result, we can impose a total _Happened-Before_ order on events i.e., we can _always_ tell that one event happened before another event. Communication can happen over shared memory, access to which can be synchronized through locks and memory barriers[1]. 
 
-When we move to a client and server architecture, message passing architecture is required. In the case of a single server (with one or more clients), we can still maintain an illusion of a Newtonian universe: TCP (the transport layer used by popular application protocols) gives a guarantee that packets will be delivered to the server in the same order that they were sent by a client. As we'll later see, this guarantee can be used as a power primitive upon which more complex guarantees can be set.
+When we move to a client and server architecture, message passing architecture is required. In the case of a single server (with one or more clients), we can still maintain an illusion of a Newtonian universe: TCP (the transport layer used by popular application protocols) gives a guarantee that packets will be delivered to the server in the order sent by the client. As we'll later see, this guarantee can be used as a powerful primitive upon which more complex guarantees can be buit.
 
-However, there are two core reasons why we no longer want to run an application on a single server: in recent times it has become consensus that *reliability*, *availability* and *scalability* are best obtained using multiple machines. Mission critical applications must at least maintain reliability and availability; in the case of consumer (and even many enterprise) web applications, with success often come scalability challenges. Thus, it's inevitable that we leave Newton's universe and enter Einstein's[2].
+However, there are reasons why we no longer want to run an application on a single server: in recent times it has become consensus that *reliability*, *availability* and *scalability* are best obtained using multiple machines. Mission critical applications must at least maintain reliability and availability; in the case of consumer (and even many enterprise) web applications, with success often come scalability challenges. Thus, it's inevitable that we leave Newton's universe and enter Einstein's[2].
 
-fn1. This is not to belittle the fascinating challenge of building parallel shared memory systems: the topic is merely very well covered and outside of this post. I highly recommend _The Art of Multiprocessor Programming_ (by Maurice Herlihy) and _Java Concurrency In Practice_ (Goetz, Lea et al) to those interested in shared memory concurrency.
+fn1. This is not to belittle the fascinating challenges of building parallel shared memory systems: the topic is merely very well covered and outside of this post. I highly recommend _The Art of Multiprocessor Programming_ (by Maurice Herlihy) and _Java Concurrency In Practice_ (Goetz, Lea et al) to those interested in shared memory concurrency.
 
-fn2. The comparison with theory of relativity is not original: Leslie Lamport and "Pat Helland":http://blogs.msdn.com/b/pathelland/ have used this comparison. Several concepts in distributed systems such as Vector Clocks and Lamport Timestamps are explicitly inspired by Theory of Relativity.
+fn2. The comparison with theory of relativity is not original: Leslie Lamport and "Pat Helland":http://blogs.msdn.com/b/pathelland/ have used this comparison. Several concepts in distributed systems such as Vector Clocks and Lamport Timestamps are explicitly inspired by relativity.
 
 h2. Intuitive formulation of the problem
 
