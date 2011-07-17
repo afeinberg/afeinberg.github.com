@@ -20,7 +20,7 @@ However, there are two core reasons why we no longer want to run an application 
 
 fn1. This is not to belittle the fascinating challenge of building parallel shared memory systems: the topic is merely very well covered and outside of this post. I highly recommend _The Art of Multiprocessor Programming_ (by Maurice Herlihy) and _Java Concurrency In Practice_ (Goetz, Lea et al) to those interested in shared memory concurrency.
 
-fn2. The comparison with theory of relativity is original: Leslie Lamport and "Pat Helland":http://blogs.msdn.com/b/pathelland/ have used this comparison. Several concepts in distributed systems such as Vector Clocks and Lamport Timestamps are explicitly inspired by Theory of Relativity.
+fn2. The comparison with theory of relativity is not original: Leslie Lamport and "Pat Helland":http://blogs.msdn.com/b/pathelland/ have used this comparison. Several concepts in distributed systems such as Vector Clocks and Lamport Timestamps are explicitly inspired by Theory of Relativity.
 
 h2. Intuitive formulation of the problem
 
