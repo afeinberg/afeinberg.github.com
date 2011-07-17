@@ -38,23 +38,23 @@ h2. State machines, atomic multicast and consensus
 
 An approach commonly used to implement this sort of behavior is "state machine replication":http://en.wikipedia.org/wiki/State%20machine%20replication. This was first proposed by Leslie Lamport (also known as the author of LaTeX), in the paper "_Time, Clocks and the Ordering of Events in a Distributed System_":http://research.microsoft.com/en-us/um/people/lamport/pubs/pubs.html#time-clocks. The idea is that if we model each node in a distributed system as a state machine, and send the same input (messages) in the same order to each state machine, we will end up in the same final state. 
 
-This leads to our next question, how do we ensure that the same messages are sent to each machine, in the same order? This problem is known as "_atomic broadcast_":http://en.wikipedia.org/wiki/Atomic%20broadcast or more generally _atomic multicast_. We should take special care to distinguish this from the "IP multicast protocol":http://en.wikipedia.org/wiki/IP%20multicast which makes no guarantees about order or reliability of messages: UDP, rather than TCP is layered on top of it.
+This leads to our next question: how do we ensure that the same messages are sent to each machine, in the same order? This problem is known as "_atomic broadcast_":http://en.wikipedia.org/wiki/Atomic%20broadcast or more generally _atomic multicast_. We should take special care to distinguish this from the "IP multicast protocol":http://en.wikipedia.org/wiki/IP%20multicast which makes no guarantees about order or reliability of messages: UDP, rather than TCP is layered on top of it.
 
 A better way to view atomic multicast is a as a special case of the publish subscribe pattern (used by message queing systems such as "ActiveMQ":http://activemq.apache.org, "RabbitMQ":http://www.rabbitmq.com, "Kafka":http://sna-projects.com/kafka/ and "Virtual Synchrony":http://en.wikipedia.org/wiki/Virtual%20synchrony based systems such as "JGroups":http://www.jgroups.org/ and "Spread":http://www.spread.org/ [3]).
 
-A generalization of this problem is the distributed transaction problem: how we do ensure that either all nodes execute the exact same transaction (executing all operations in the same order), or none do?
+A generalization of this problem is the distributed transaction problem: how we do ensure that either all the nodes execute the exact same transaction (executing all operations in the same order), or none do?
 
 Traditionally "two phase commit":http://en.wikipedia.org/wiki/Two%20phase%20commit (2PC) algorithm has been used for distributed transactions. The problem with two phase commit is that it isn't fault tolerant: if the coordinator node fails, the process is blocked until the coordinator is repaired ("Consensus on Transaction Commit":http://research.microsoft.com/apps/pubs/default.aspx?id=64636)
 
-"_Consensus_":http://en.wikipedia.org/wiki/Consensus%20(computer%20science) algorithms solve the problem of how multiples nodes could arrive at a commonly accepted value in the process of failures. We can use consensus algorithm to build fault tolerant distributed commit protocols by (this is somewhat of an over-simplification) having nodes "decide" whether or not a transaction has been committed.
+"_Consensus_":http://en.wikipedia.org/wiki/Consensus%20(computer%20science) algorithms solve the problem of how multiples nodes could arrive at a commonly accepted value in the process of failures. We can use consensus algorithm to build fault tolerant distributed commit protocols by (this is somewhat of an over-simplification) having nodes "decide" whether or not a transaction has been committed or aborted.
 
 fn3. Virtual synchrony (making asynchronous systems appear as synchronous) is itself a research topic that is closesly related to and at times complemented by consensus work. Ken Birman's group at Cornell has done a great deal of work on it. Unfortunately, it was difficult to work much of this fascinating research into a high level blog post. 
 
 h3. Theoretic impossibility, practical possibility
 
-Problem is that it's impossible to construct a consensus algorithm that will terminate in a guaranteed time-bound in an asynchronous system lacking a common clock: this is known (after the Fisher, Lynch, Patterson) as the "FLP impossibility result":http://portal.acm.org/citation.cfm?doid=3149.214121. Eric Brewer's "CAP theorem":http://en.wikipedia.org/wiki/CAP%20theorem (a "well covered":http://www.cloudera.com/blog/2010/04/cap-confusion-problems-with-partition-tolerance/ "topic":http://codahale.com/you-cant-sacrifice-partition-tolerance/) can be argued to be an elegant and intuitive re-statement of the FLP.
+Problem is that it's impossible to construct a fault tolerant consensus algorithm that will terminate in a guaranteed time-bound in an asynchronous system lacking a common clock: this is known (after the Fisher, Lynch, Patterson) as the "FLP impossibility result":http://portal.acm.org/citation.cfm?doid=3149.214121. Eric Brewer's "CAP theorem":http://en.wikipedia.org/wiki/CAP%20theorem (a "well covered":http://www.cloudera.com/blog/2010/04/cap-confusion-problems-with-partition-tolerance/ "topic":http://codahale.com/you-cant-sacrifice-partition-tolerance/) can be argued to be an elegant and intuitive re-statement of the FLP.
 
-In practice, however, practical consensus algorithms can be constructed with reasonable liveness properties. It does, however, imply that consensus should be limited in its applications.
+In practice, however, consensus algorithms can be constructed with reasonable liveness properties. It does, however, imply that consensus should be limited in its applications.
 
 One thing to note is that consensus protocols can typically handle simple or clean failures (failures of minority of nodes), at the cost of greater latency: handling more complex (split brain scenarios) where a "quorum":http://en.wikipedia.org/wiki/Quorum%20(Distributed%20Systems) can't be reached is more difficult. 
 
@@ -68,7 +68,7 @@ Apache "ZooKeeper":http://zookeeper.apache.org/ is another practical example of 
 
 h3. Limitations of total transactional replication 
 
-A question arises: why are transactional replication only used for applications such as cluster membership, leader elections and lock managers? Why aren't these algorithms used for building distributed systems themselves? Wouldn't we all like a fully transactional, fault tolerant, multi-master distributed database? Wouldn't we like message queues that promise to distributed exactly the same messages, to exactly the same nodes, in exactly the same order, delivering each message exactly once at the exact same time?
+A question arises: why is transactional replication only used for applications such as cluster membership, leader elections and lock managers? Why aren't these algorithms used for building distributed applications e.g., databases themselves? Wouldn't we all like a fully transactional, fault tolerant, multi-master distributed database? Wouldn't we like message queues that promise to deliver exactly the same messages, to exactly the same nodes, in exactly the same order, delivering each message exactly once at the exact same time?
 
 The above mentioned FLP impossibility result provides one limitation of these systems: many practical systems require tight latency aguarantees in even in the light of machine and network failures. "_The Dangers of Replication and a Solution_":http://research.microsoft.com/apps/pubs/default.aspx?id=68247 also discusses scalability issues such as increases in network traffic, potential deadlocks in what the authors called "anywhere-anytime-anyway transactional replication".
 
@@ -76,4 +76,4 @@ In the case of Chubby and ZooKeeper, this is less of an issue: in a well designe
 
 h2. What's next?
 
-The next post will look at alternatives to the common alternatives to total transactional replication as well as several (relatively recent) papers and systems that _do_ apply some transactional replication techniques at scale.
+The next post will look at common alternatives to total transactional replication as well as several (relatively recent) papers and systems that _do_ apply some transactional replication techniques at scale.
