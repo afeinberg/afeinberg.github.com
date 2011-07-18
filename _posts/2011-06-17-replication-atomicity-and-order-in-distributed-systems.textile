@@ -64,7 +64,7 @@ The "Paxos":http://en.wikipedia.org/wiki/Paxos%20algorithm Consensus and Commit 
 
 Google's "Chubby":http://labs.google.com/papers/chubby.html service is a practical example of a Paxos based system. Chubby provides a file system-like interface and is meant to be used for locks, leases and leader elections. One example of use of Chubby (that will be discussed in further detail in the next post) is assigning mastership of partitions in a distributed database to individual nodes.
 
-Apache "ZooKeeper":http://zookeeper.apache.org/ is another practical example of a system built on a Paxos-like distributed commit protocol. In this case, the consensus problem is slightly modified: rather than assume a purely asynchronous network, the TCP ordering guarantee is "taken advantage of":http://portal.acm.org/citation.cfm?id=1529978. Like Chubby, Paxos exposes a file-system like API and is frequently used for leader election, cluster membership services, service discovery and assigning ownership to partitions in shared nothing stateful distributed systems.
+Apache "ZooKeeper":http://zookeeper.apache.org/ is another practical example of a system built on a Paxos-like distributed commit protocol. In this case, the consensus problem is slightly modified: rather than assume a purely asynchronous network, the TCP ordering guarantee is "taken advantage of":http://portal.acm.org/citation.cfm?id=1529978. Like Chubby, ZooKeeper exposes a file-system like API and is frequently used for leader election, cluster membership services, service discovery and assigning ownership to partitions in shared nothing stateful distributed systems.
 
 h3. Limitations of total transactional replication 
 
