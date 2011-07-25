@@ -1,0 +1,79 @@
+---
+layout: post
+title: Reliability, availability and scale - an interlude
+---
+
+h1. {{ page.title }}
+
+h2. An interlude
+
+My "last post on distributed systems":http://afeinberg.github.com/2011/06/17/replication-atomicity-and-order-in-distributed-systems.html was dense with concepts. Before continuing with much more discussion, let's take a quick detour and define several frequently used, but  often confused, terms in distributed computing. 
+
+The term scalability is often conflated with other related, important concepts. See for example an article by 37Signals ""Don’t scale: 99.999% uptime is for Wal-Mart"":http://37signals.com/svn/archives2/dont_scale_99999_uptime_is_for_walmart.php -- in the article, the notions of scalability and an availability SLA (which are typically stated as percentages) are used as if they were interchangeable.
+
+However, as we'll see in this post, meeting one or more of these related non-functional (i.e., ones which often come _after_ the core functionality has been implemented) requirements does not imply meeting the others.
+
+The non-functional requirements (or "ilities") will be separated into three "buckets": reliability, availability and scalability. It's very difficult to agree on what these terms mean, but based on systems engineering practice, here's the way that I approach it.
+
+h2. Reliability
+
+In the previous post, the term "reliability" was used informally and the term "fault tolerance" was used more formally, e.g., in discussion of fault tolerance properties of algorithms. Rigorously speaking, fault tolerance is only a part of the reliability story: in a fault tolerant multi-component system, it is sufficient that failure of one component doesn't cause failure of other components. A system that continues to function in a degraded state is fault tolerant, but unless the full functionality of the previous state can be restored, it's not fully reliable. In other words, a reliable system requires fault tolerance, but a fault tolerant system may not require reliability.
+
+h3. Recovery
+
+"Recovery" refers to restoring full functionality (defined to be the previous state in this context) when a failure occurs. Recovery is not often an explicitly stated goal, and is sometimes not included in formal definitions of reliability. However, recovery is an important consideration in the the discipline of deploying and maintaining production systems. Certain design choices (e.g., not maintaining a transaction log) can hurt a system's recovery profile despite helping scalability and improving the availability of a system.
+
+"MTTR" stands for "_Mean Time To Recovery_":http://en.wikipedia.org/wiki/Mean_time_to_recovery: the average time from when a failure is encountered to when the previous state is restore, i.e., a system's recovery time.
+
+h2. Availability
+
+In Tannenbaum, Steen _Distributed Systems: Principles and Paradigms_ availability is defined as
+
+bq. [The] property that a system is ready to be used immediately. In general, it refers to the probability that the system is operating correctly at any given moment and is available to perform its functions on behalf of its users. In other words, a highly available system is one that will most likely be working at a given instant in time.
+
+Here we see two definitions -- first sentence defines availability at a specific point in time, while rest of the paragraph gives a way to characterize the _overall_ availability of a system. Enterprise vendors frequently talk about high availability of their solutions, however, this could mean different things.
+
+For example, a system that goes down for a minute in the case of failure and then recovers can still be marketed as "highly available": this could be honest marketing if the system is designed such that the failures are rare, i.e., the "*MTBF*":http://en.wikipedia.org/wiki/MTBF is particularly high in relation to MTTR.
+
+Recently the trend has become to build systems that either maintain availability in the face of failure or recover it quickly, rather then systems with especially high MTBF. This systems engineering view is well summarized by John Allspaw in ""MTTR is more important than MTBF (for most types of F)"":http://www.kitchensoap.com/2010/11/07/mttr-mtbf-for-most-types-of-f/.
+
+For the purpose of this blog, a "median" definition will be used: a system is highly available if, in the case of failure, it can still respond within a reasonable (acceptable to the end-user) timeout.
+
+
+h2. Scalability
+
+Scalability is a property of systems that are able to handle an increase in requests without performance degradation, e.g., in terms of latency and/or throughput. In the context of a distributed system, scalability requires that requests are handled in parallel by multiple nodes.
+
+Note that there are multiple ways to distribute load across nodes. With a stateless system (or a system whose state can fit within a single machine's main memory), a simple way to increase scalability would be to use a high degree of replication (replicating the full instance of the service, allowing it to take both reads and writes) and round-robin requests between multiple machines. In a system where state _does not_ fit in a single machine's main memory, scalability generally requires partitioning the data, i.e., a _shared-nothing_ architecture.
+
+h3. Soft state
+
+In addition to stateful and stateless services, there are services that maintain soft state. "Soft state" is loosely defined as state that has several properties including relaxed consistency semantics , and is not critical to the core of the service (although soft state may often be required for optional functionality) (Chiappa, ""Soft and Hard State"":http://mercury.lcs.mit.edu/~jnc/tech/hard_soft.html).  In this case, there are several options of where the soft state could be stored: in memory of local machines (which frequently implies using sticky sessions) or in a separate system, e.g., in a distributed cache. The former may imply certain scalability and availability characteristics, e.g., possibility of hot spots in the load balancer and need for sessions to be restarted when service nodes fail; in the later case, the availability and scalability properties of the separate stateful system carry over to the service itself.
+
+h3. Elasticity
+
+Elasticity is a concern closely related to scalability: the ability to add or remove resources (in our case, nodes) to change a system's capacity without downtime. A scalable system may not always be elastic, e.g., if adding a node requires taking the system down, manually moving data around, reconfiguring the system, and then starting the system up again. In other words, a scalable system without elasticity would be taking a hits to its availability when nodes need to be added or removed.
+
+h2. Case study: a shared nothing database
+
+Now that we've looked at these concepts in abstract, let's use an example: a shared nothing database. Shared nothing architecture means the nodes in the system don't share memory or disk: data resides independently on the nodes which communicate over a network (Stonebraker, "The Case for Shared Nothing":http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.58.5370). The space of all possible primary keys is partitioned (a frequently used synonym for partitioning, especially when done at the application level is "sharding") by using either hashing or range based partitioning, such that one or more partitions could be assigned to a primary physical location.
+
+Since data is spread across several nodes, assuming a uniform key and request distribution, the system scales linearly across multiple nodes. It could be also made elastic by using consistent hashing and/or virtual partitions. For availability and reliability, different types of replication can be used, placing the data at multiple physical locations. 
+
+In the case independent failures, partitioning also provides _fault isolation_: provided the system knows how to serve results from a partial dataset, only the partitions held by the failed nodes are affected. 
+
+h3. What's next?
+
+We're now left with an important series of questions, related to maintenance or recovery of availability (including maintaining latency) for the affected partitions in case of various failure and high-load scenarios.
+
+Various approaches and the systems that take them will be discussed in the next post: "Alternatives to total transactional replication". As this detour ends and the journey continues, pay attention to how the various theoretical approaches and real-world systems work in situations such as:
+
+* Providing availability under failure. This shouldn't be seen as simple either/or trade-off, but rather on a sliding scale, ranging from responses to simpler (non-correlated, of individual nodes) to more complex (correlated failures, potentially of majority of nodes, split-brain scenarios) failures
+* Adding a new node to either expand capacity (elasticity) or take place of a node that failed (recovery), or recovering a node from a temporary failure
+* Handling high write throughput and contention
+
+The next post will also look at impact (or, at times, non-impact) of scalability, atomicity and reliability (non-functional requirements) upon functional requirements such as support for ordered operations and atomicity.
+
+h3. Contributions
+
+Thanks to Ted Nyman ("@tnm":http://twitter.com/#!/tnm), Jeff Hodges ("@jmhodges":http://twitter.com/jmhodges), Justin Sheehy ("@justinsheehy":http://twitter.com/justinsheehy), "Daniel Weinreb":http://danweinreb.org/blog/, "Peter Alvaro":http://www.cs.berkeley.edu/~palvaro/, Dave Fayram ("@KirinDave":http://twitter.com/KirinDave), "Anil Madhavapeddy":http://anil.recoil.org/, "Neil Conway":http://neilconway.org/  and C. Scott Andreas ("@cscotta":https://twitter.com/#!/cscotta) for proof-reading and editing this post.
