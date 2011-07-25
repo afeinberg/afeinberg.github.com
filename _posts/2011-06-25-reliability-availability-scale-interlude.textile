@@ -58,9 +58,9 @@ h2. Case study: a shared nothing database
 
 Now that we've looked at these concepts in abstract, let's use an example: a shared nothing database. Shared nothing architecture means the nodes in the system don't share memory or disk: data resides independently on the nodes which communicate over a network (Stonebraker, "The Case for Shared Nothing":http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.58.5370). The space of all possible primary keys is partitioned (a frequently used synonym for partitioning, especially when done at the application level is "sharding") by using either hashing or range based partitioning, such that one or more partitions could be assigned to a primary physical location.
 
-Since data is spread across several nodes, assuming a uniform key and request distribution, the system scales linearly across multiple nodes. It could be also made elastic by using consistent hashing and/or virtual partitions. For availability and reliability, different types of replication can be used, placing the data at multiple physical locations. 
+Since data is spread across several nodes, assuming a uniform key and request distribution, the system scales linearly to multiple nodes. It could be also made elastic by using consistent hashing and/or virtual partitions. For availability and reliability, different types of replication can be used, placing the data at multiple physical locations. 
 
-In the case independent failures, partitioning also provides _fault isolation_: provided the system knows how to serve results from a partial dataset, only the partitions held by the failed nodes are affected. 
+In case of independent failures, partitioning also provides _fault isolation_: provided the system knows how to serve results from a partial dataset, only the partitions held by the failed nodes are affected. 
 
 h3. What's next?
 
