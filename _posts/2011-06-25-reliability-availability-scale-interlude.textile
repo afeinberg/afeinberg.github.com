@@ -23,7 +23,7 @@ h3. Recovery
 
 "Recovery" refers to restoring full functionality (defined to be the previous state in this context) when a failure occurs. Recovery is not often an explicitly stated goal, and is sometimes not included in formal definitions of reliability. However, recovery is an important consideration in the the discipline of deploying and maintaining production systems. Certain design choices (e.g., not maintaining a transaction log) can hurt a system's recovery profile despite helping scalability and improving the availability of a system.
 
-"MTTR" stands for "_Mean Time To Recovery_":http://en.wikipedia.org/wiki/Mean_time_to_recovery: the average time from when a failure is encountered to when the previous state is restore, i.e., a system's recovery time.
+"MTTR" stands for "_Mean Time To Recovery_":http://en.wikipedia.org/wiki/Mean_time_to_recovery: the average time from when a failure is encountered to when the previous state is restored, i.e., a system's recovery time.
 
 h2. Availability
 
